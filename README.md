@@ -1,6 +1,6 @@
 # CyThan AI
 
-CyThan AI is a full-stack, ChatGPT-style AI application built with a vanilla HTML/CSS/JavaScript frontend and a Python FastAPI backend powered by Google's Gemini 3.5 Flash model.
+CyThan AI is a full-stack, ChatGPT-style AI application built with a vanilla HTML/CSS/JavaScript frontend and a Python FastAPI backend powered by Google's Gemini 3.5 Flash-lite-lite model.
 
 The frontend is designed to be lightweight, responsive, and deployable as a static website, while the backend handles AI requests and streams Gemini responses to the browser in real time.
 
@@ -12,7 +12,7 @@ The frontend is designed to be lightweight, responsive, and deployable as a stat
 * Responsive desktop and mobile layout
 * Chat history maintained in memory
 * Real-time AI response streaming
-* Google Gemini 3.5 Flash
+* Google Gemini 3.5 Flash-lite
 * FastAPI backend
 * Vanilla JavaScript frontend
 * `uv` dependency management
@@ -226,7 +226,7 @@ FastAPI
    │
    │
    ▼
-Gemini 3.5 Flash
+Gemini 3.5 Flash-lite
 ```
 
 ---
@@ -481,7 +481,7 @@ After deployment, the application looks like this:
         ┌─────────────────────────┐
         │    Google Gemini API    │
         │                         │
-        │    Gemini 3.5 Flash     │
+        │  Gemini 3.5 Flash-lite  │
         └─────────────────────────┘
 ```
 
@@ -650,7 +650,7 @@ CyThan AI uses:
 | ---------------------- | ------------------------------- |
 | Frontend               | HTML + CSS + Vanilla JavaScript |
 | Backend                | FastAPI                         |
-| AI                     | Gemini 3.5 Flash                |
+| AI                     | Gemini 3.5 Flash-lite           |
 | Python package manager | uv                              |
 | Python SDK             | google-genai                    |
 | Local configuration    | python-dotenv                   |

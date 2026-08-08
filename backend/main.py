@@ -1,6 +1,6 @@
 """
 CyThan AI Backend
-Streaming FastAPI backend using Google Gemini 3.5 Flash.
+Streaming FastAPI backend using Google Gemini 3.5 Flash-lite.
 """
 
 from __future__ import annotations
