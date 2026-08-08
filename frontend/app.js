@@ -12,11 +12,13 @@
 
 const CONFIG = {
 
+    // Local development
     localBackend:
         "http://127.0.0.1:8000",
 
+    // Production — Render
     productionBackend:
-        "https://YOUR-CYTHAN-BACKEND.onrender.com"
+        "https://cythan-ai.onrender.com"
 
 };
 
@@ -958,8 +960,7 @@ function getFriendlyErrorMessage(error) {
 
         return (
             "I couldn't connect to the CyThan AI server. " +
-            "Please make sure the FastAPI backend is running " +
-            "and try again."
+            "Please check your internet connection and try again."
         );
 
     }
