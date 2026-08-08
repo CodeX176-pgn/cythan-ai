@@ -32,7 +32,7 @@ if not API_KEY:
     )
 
 client = genai.Client(api_key=API_KEY)
-MODEL_NAME = "gemini-3.5-flash"
+MODEL_NAME = "gemini-3.5-flash-lite"
 # --------------------------------------------------------------------
 # Logging
 # --------------------------------------------------------------------
