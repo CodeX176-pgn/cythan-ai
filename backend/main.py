@@ -99,6 +99,7 @@ METRICS = {
     "gemini_quota_total": 0,
     "gemini_network_error_total": 0,
     "gemini_other_error_total": 0,
+    "gemini_first_token_total": 0,
     "gemini_latency_ms_total": 0.0,
     "gemini_latency_ms_max": 0.0,
 }
@@ -110,6 +111,7 @@ async def increment_metric(name: str, amount: int = 1) -> None:
 
 async def record_gemini_latency(duration_ms: float) -> None:
     async with METRICS_LOCK:
+        METRICS["gemini_first_token_total"] += 1
         METRICS["gemini_latency_ms_total"] += duration_ms
         METRICS["gemini_latency_ms_max"] = max(
             METRICS["gemini_latency_ms_max"],
@@ -785,9 +787,10 @@ async def operational_metrics():
         snapshot = dict(METRICS)
 
     gemini_requests = snapshot["gemini_requests_total"]
+    first_token_count = snapshot["gemini_first_token_total"]
     avg_latency = (
-        snapshot["gemini_latency_ms_total"] / gemini_requests
-        if gemini_requests
+        snapshot["gemini_latency_ms_total"] / first_token_count
+        if first_token_count
         else 0.0
     )
 
@@ -813,8 +816,9 @@ async def operational_metrics():
             "quota_errors": snapshot["gemini_quota_total"],
             "network_errors": snapshot["gemini_network_error_total"],
             "other_errors": snapshot["gemini_other_error_total"],
-            "average_latency_ms": round(avg_latency, 1),  # time-to-first-token
+            "average_latency_ms": round(avg_latency, 1),
             "max_latency_ms": round(snapshot["gemini_latency_ms_max"], 1),
+            "first_token_samples": first_token_count,
         },
     }
 
@@ -1119,8 +1123,7 @@ async def chat(
                         config=(
                             types.GenerateContentConfig(
 
-                                system_instruction=
-                                    SYSTEM_INSTRUCTION
+                                system_instruction = SYSTEM_INSTRUCTION
 
                             )
                         )
@@ -1219,6 +1222,8 @@ async def chat(
         async def stream():
 
             first_token_recorded = False
+            stream_completed = False
+            stream_started = time.perf_counter()
 
             try:
 
@@ -1240,6 +1245,7 @@ async def chat(
                 # If the request successfully completed,
                 # make sure the cooldown is cleared.
 
+                stream_completed = True
                 await increment_metric("chat_success_total")
                 await increment_metric("gemini_success_total")
                 mark_ai_available()
@@ -1373,13 +1379,23 @@ async def chat(
                     )
                 )
 
+            except asyncio.CancelledError:
+                # The client disconnected while Gemini was streaming.
+                # Do not send a fake error payload to a closed connection.
+                logger.info(
+                    "Gemini stream cancelled by client after %.1f ms.",
+                    (time.perf_counter() - stream_started) * 1000,
+                )
+                raise
+
 
         return StreamingResponse(
-
             stream(),
-
-            media_type="text/plain",
-
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "X-Accel-Buffering": "no",
+            },
         )
 
 

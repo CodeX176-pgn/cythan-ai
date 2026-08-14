@@ -105,9 +105,12 @@ export async function streamAIResponse(
             API_URL,
             {
                 method: "POST",
+                cache: "no-store",
                 headers: {
                     "Content-Type":
-                        "application/json"
+                        "application/json",
+                    "Accept":
+                        "text/plain"
                 },
                 body: JSON.stringify({
                     message:
@@ -146,7 +149,9 @@ export async function streamAIResponse(
             } else if (
                 error.code === "AI_SERVICE_UNAVAILABLE" ||
                 response.status === 429 ||
-                response.status === 503
+                response.status === 502 ||
+                response.status === 503 ||
+                response.status === 504
             ) {
                 if (error.retryAfter > 0) {
                     showQuotaUnavailable(
