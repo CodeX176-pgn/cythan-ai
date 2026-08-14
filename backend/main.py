@@ -20,11 +20,11 @@ import os
 import re
 import time
 
-#* from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from google import genai
 from google.genai import types
@@ -34,7 +34,12 @@ from pydantic import BaseModel, Field, field_validator
 # Environment
 # --------------------------------------------------------------------
 
-load_dotenv()
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "production").strip().lower()
+
+# Only load .env during explicit local development. Production secrets
+# must come from the hosting provider's environment variables.
+if ENVIRONMENT in {"development", "dev", "local"}:
+    load_dotenv()
 
 API_KEY = os.environ.get("GEMINI_API_KEY")
 
@@ -76,7 +81,12 @@ logger = logging.getLogger(
 
 app = FastAPI(
     title="CyThan AI Backend",
-    version="1.4.0",
+    version="1.5.0",
+    # API documentation is disabled by default in production. Set
+    # ENABLE_API_DOCS=true only when interactive docs are needed.
+    docs_url="/docs" if os.environ.get("ENABLE_API_DOCS", "false").lower() == "true" else None,
+    redoc_url="/redoc" if os.environ.get("ENABLE_API_DOCS", "false").lower() == "true" else None,
+    openapi_url="/openapi.json" if os.environ.get("ENABLE_API_DOCS", "false").lower() == "true" else None,
 )
 
 
@@ -84,29 +94,47 @@ app = FastAPI(
 # CORS
 # --------------------------------------------------------------------
 
+# Trust only the hostnames that should ever reach this API. Additional
+# hosts can be supplied through ALLOWED_HOSTS as a comma-separated list.
+_default_hosts = [
+    "cythan-ai.onrender.com",
+    "localhost",
+    "127.0.0.1",
+]
+_allowed_hosts = [
+    host.strip()
+    for host in os.environ.get("ALLOWED_HOSTS", ",".join(_default_hosts)).split(",")
+    if host.strip()
+]
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=_allowed_hosts,
+)
+
+# The frontend does not use cookies or browser credentials. Keep CORS
+# narrowly scoped to the production site plus local development origins.
+_default_origins = [
+    "https://codex176-pgn.github.io",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+]
+_allowed_origins = [
+    origin.strip()
+    for origin in os.environ.get("ALLOWED_ORIGINS", ",".join(_default_origins)).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-
-    allow_origins=[
-        # Local development
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-
-        "http://127.0.0.1:3000",
-        "http://localhost:3000",
-
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-
-        # Production
-        "https://codex176-pgn.github.io",
-    ],
-
-    allow_credentials=True,
-
-    allow_methods=["*"],
-
-    allow_headers=["*"],
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 
@@ -119,9 +147,18 @@ async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
 
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
-    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+    )
+    # HSTS is safe here because the public Render service is HTTPS-only.
+    response.headers.setdefault(
+        "Strict-Transport-Security",
+        "max-age=31536000; includeSubDomains",
+    )
 
     # Prevent browsers/proxies from caching API responses that may
     # contain user-specific chat data or service status.
@@ -129,6 +166,39 @@ async def add_security_headers(request: Request, call_next):
         response.headers.setdefault("Cache-Control", "no-store")
 
     return response
+
+
+# --------------------------------------------------------------------
+# REQUEST SIZE PROTECTION
+# --------------------------------------------------------------------
+
+MAX_REQUEST_BODY_BYTES = 512 * 1024
+
+
+@app.middleware("http")
+async def enforce_request_size(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+
+    if content_length:
+        try:
+            if int(content_length) > MAX_REQUEST_BODY_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={
+                        "error": "REQUEST_TOO_LARGE",
+                        "message": "The request is too large. Please shorten the message or conversation history.",
+                    },
+                )
+        except ValueError:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "INVALID_CONTENT_LENGTH",
+                    "message": "The request contains an invalid Content-Length header.",
+                },
+            )
+
+    return await call_next(request)
 
 
 # --------------------------------------------------------------------
@@ -1135,43 +1205,3 @@ async def chat(
             ),
 
         )
-
-'''
-# --------------------------------------------------------------------
-# FRONTEND
-# --------------------------------------------------------------------
-
-BASE_DIR = (
-
-    Path(__file__)
-    .resolve()
-    .parent
-    .parent
-
-)
-
-
-DOCS_DIR = (
-
-    BASE_DIR /
-    "docs"
-
-)
-
-
-app.mount(
-
-    "/",
-
-    StaticFiles(
-
-        directory=DOCS_DIR,
-
-        html=True
-
-    ),
-
-    name="docs",
-
-)
-'''

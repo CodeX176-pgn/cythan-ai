@@ -1,4 +1,4 @@
-const CACHE_NAME = "cythan-ai-shell-v1";
+const CACHE_NAME = "cythan-ai-shell-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -29,8 +29,12 @@ self.addEventListener("fetch", event => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Never cache API calls or non-GET requests.
-  if (request.method !== "GET" || url.pathname.includes("/api/")) {
+  // Never cache API calls, cross-origin requests, or non-GET requests.
+  if (
+    request.method !== "GET" ||
+    url.origin !== self.location.origin ||
+    url.pathname.includes("/api/")
+  ) {
     return;
   }
 
