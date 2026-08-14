@@ -1,50 +1,133 @@
 # CyThan AI
 
-CyThan AI is a web-based AI assistant with a modular JavaScript frontend and a FastAPI + Google Gemini backend.
+CyThan AI is a production-deployed AI chat application with a modular vanilla-JavaScript frontend and a FastAPI backend powered by Google Gemini.
 
-## Production architecture
+## Architecture
 
-- **Frontend:** GitHub Pages (`docs/`)
-- **Backend:** Render (`main.py`)
-- **AI:** Google Gemini API
-- **Frontend API:** `https://cythan-ai.onrender.com/api/chat`
-- **Status API:** `https://cythan-ai.onrender.com/api/status`
+```text
+GitHub Pages frontend
+        |
+        | HTTPS / CORS
+        v
+Render FastAPI backend
+        |
+        | Google GenAI API
+        v
+Google Gemini
+```
+
+The frontend is hosted on GitHub Pages and the backend is hosted on Render.
+
+## Features
+
+- Streaming AI responses
+- Persistent chat history in the browser
+- Markdown rendering and code highlighting
+- Copy and regenerate controls
+- Responsive/mobile UI
+- Dark/light themes
+- Lucide icons
+- PWA support
+- Gemini quota detection and cooldown handling
+- Per-client in-memory request limits
+- Production security headers
+- CORS and trusted-host protection
+- Health and AI-status endpoints
+- Privacy-conscious operational metrics
+
+## Production endpoints
+
+- `GET /health` — Render/service health check
+- `GET /api/status` — current Gemini availability
+- `POST /api/chat` — streaming chat endpoint
+- `GET /api/metrics` — aggregate operational metrics
+
+Interactive FastAPI documentation is disabled in production unless `ENABLE_API_DOCS=true` is explicitly configured.
+
+## Monitoring
+
+Phase 9 adds in-memory operational metrics. The metrics intentionally exclude:
+
+- chat messages
+- conversation history
+- API keys
+- client IP addresses
+- cookies
+- request bodies
+
+The metrics include aggregate request counts, HTTP status classes, chat outcomes, Gemini outcomes, uptime, and time-to-first-token latency.
+
+Metrics reset whenever the Render process restarts. This is intentional for the lightweight deployment. If CyThan AI later uses multiple backend instances, move these counters to a shared monitoring system.
 
 ## Environment variables
 
-The backend requires `GEMINI_API_KEY`.
+Production should provide secrets through the hosting provider rather than a `.env` file.
 
-For local development, copy `.env.example` to `.env` and add your key. Never commit `.env` or a real API key.
+Required:
 
-Production deployments should provide secrets through the hosting provider's environment-variable system.
+```text
+GEMINI_API_KEY
+```
 
-Optional variables:
+Optional:
 
-- `ENVIRONMENT` — use `development` for local `.env` loading; production defaults to secure environment-only secret loading.
-- `ALLOWED_ORIGINS` — comma-separated CORS origins.
-- `ALLOWED_HOSTS` — comma-separated trusted hostnames.
-- `ENABLE_API_DOCS` — set to `true` only when interactive FastAPI docs are needed.
+```text
+ENVIRONMENT=production
+ALLOWED_HOSTS=cythan-ai.onrender.com
+ALLOWED_ORIGINS=https://codex176-pgn.github.io
+ENABLE_API_DOCS=false
+```
 
-## Security hardening
-
-The backend includes:
-
-- Restricted CORS methods, headers, and origins
-- Trusted-host validation
-- Security response headers and HSTS
-- Content-Security-Policy for API responses
-- Request body size protection
-- Pydantic request validation and message/history limits
-- Per-client rate limiting
-- Gemini quota cooldown handling
-- No frontend/API static hosting from the backend
-- Production API documentation disabled by default
-- Server-side Gemini API key handling
-
-The frontend includes a Content-Security-Policy, production-only API endpoints, safer Markdown HTML sanitization, and a versioned service-worker cache.
+See `.env.example` for a local-development template.
 
 ## Local development
 
-Install the Python dependencies used by the backend, set `GEMINI_API_KEY`, and run FastAPI with Uvicorn. The frontend in `docs/` can be served by a local static server.
+Run the FastAPI application with Uvicorn using the project's configured Python environment.
 
-Do not expose a Gemini API key in frontend JavaScript.
+Set:
+
+```text
+ENVIRONMENT=development
+GEMINI_API_KEY=your_key
+```
+
+Then start the backend and open the GitHub Pages-style frontend through a local web server.
+
+## Git hygiene
+
+Backup files are intentionally ignored by Git so they can remain on a developer's machine without being deployed:
+
+```text
+*-backup.*
+*.bak
+*.backup
+```
+
+Secrets, virtual environments, caches, logs, and local databases are also ignored.
+
+## Deployment
+
+The production backend is deployed on Render and the frontend is deployed through GitHub Pages.
+
+After a deployment, verify:
+
+1. `/health` returns HTTP 200.
+2. `/api/status` returns HTTP 200.
+3. A browser CORS preflight to `/api/chat` returns HTTP 200.
+4. `POST /api/chat` returns HTTP 200 and streams a Gemini response.
+5. `/api/metrics` returns aggregate metrics.
+6. No API key is present in frontend source or browser requests.
+
+## Release checklist
+
+- [ ] Frontend loads from GitHub Pages
+- [ ] Render health check is green
+- [ ] Gemini response streaming works
+- [ ] CORS works from the production frontend
+- [ ] Rate limiting works
+- [ ] AI cooldown handling works
+- [ ] Service-status indicator works
+- [ ] PWA/service worker registers
+- [ ] No secrets are committed
+- [ ] Backup files are ignored
+- [ ] Browser console has no production errors

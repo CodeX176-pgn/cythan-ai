@@ -74,6 +74,49 @@ logger = logging.getLogger(
     "cythan-backend"
 )
 
+# --------------------------------------------------------------------
+# PRIVACY-CONSCIOUS IN-MEMORY METRICS
+# --------------------------------------------------------------------
+# These counters intentionally contain no chat content, IP addresses,
+# API keys, or other user-identifying data. They reset when the process
+# restarts. For multi-instance production analytics, use a shared
+# monitoring system later.
+METRICS_STARTED_AT = time.time()
+METRICS_LOCK = asyncio.Lock()
+
+METRICS = {
+    "requests_total": 0,
+    "requests_2xx": 0,
+    "requests_4xx": 0,
+    "requests_5xx": 0,
+    "chat_requests_total": 0,
+    "chat_success_total": 0,
+    "chat_quota_total": 0,
+    "chat_network_error_total": 0,
+    "chat_generation_error_total": 0,
+    "gemini_requests_total": 0,
+    "gemini_success_total": 0,
+    "gemini_quota_total": 0,
+    "gemini_network_error_total": 0,
+    "gemini_other_error_total": 0,
+    "gemini_latency_ms_total": 0.0,
+    "gemini_latency_ms_max": 0.0,
+}
+
+async def increment_metric(name: str, amount: int = 1) -> None:
+    async with METRICS_LOCK:
+        if name in METRICS:
+            METRICS[name] += amount
+
+async def record_gemini_latency(duration_ms: float) -> None:
+    async with METRICS_LOCK:
+        METRICS["gemini_latency_ms_total"] += duration_ms
+        METRICS["gemini_latency_ms_max"] = max(
+            METRICS["gemini_latency_ms_max"],
+            duration_ms,
+        )
+
+
 
 # --------------------------------------------------------------------
 # FastAPI
@@ -81,7 +124,7 @@ logger = logging.getLogger(
 
 app = FastAPI(
     title="CyThan AI Backend",
-    version="1.5.0",
+    version="1.6.0",
     # API documentation is disabled by default in production. Set
     # ENABLE_API_DOCS=true only when interactive docs are needed.
     docs_url="/docs" if os.environ.get("ENABLE_API_DOCS", "false").lower() == "true" else None,
@@ -199,6 +242,55 @@ async def enforce_request_size(request: Request, call_next):
             )
 
     return await call_next(request)
+
+
+# --------------------------------------------------------------------
+# REQUEST METRICS / OPERATIONAL LOGGING
+# --------------------------------------------------------------------
+
+@app.middleware("http")
+async def collect_request_metrics(request: Request, call_next):
+    started = time.perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = (time.perf_counter() - started) * 1000
+        await increment_metric("requests_total")
+        await increment_metric("requests_5xx")
+
+        # Never log request bodies, query strings, authorization headers,
+        # cookies, IP addresses, or chat content.
+        if request.url.path != "/health":
+            logger.error(
+                "request_failed path=%s method=%s duration_ms=%.1f",
+                request.url.path,
+                request.method,
+                duration_ms,
+            )
+        raise
+
+    duration_ms = (time.perf_counter() - started) * 1000
+
+    await increment_metric("requests_total")
+
+    if 200 <= response.status_code < 300:
+        await increment_metric("requests_2xx")
+    elif 400 <= response.status_code < 500:
+        await increment_metric("requests_4xx")
+    elif response.status_code >= 500:
+        await increment_metric("requests_5xx")
+
+    if request.url.path != "/health":
+        logger.info(
+            "request_completed path=%s method=%s status=%s duration_ms=%.1f",
+            request.url.path,
+            request.method,
+            response.status_code,
+            duration_ms,
+        )
+
+    return response
 
 
 # --------------------------------------------------------------------
@@ -657,6 +749,52 @@ async def ai_status():
     }
 
 
+@app.get("/api/metrics")
+async def operational_metrics():
+    """Return privacy-conscious in-memory operational metrics.
+
+    This endpoint exposes aggregate counters only. It never returns
+    chat messages, client IP addresses, API keys, or request bodies.
+    Metrics reset when the backend process restarts.
+    """
+    async with METRICS_LOCK:
+        snapshot = dict(METRICS)
+
+    gemini_requests = snapshot["gemini_requests_total"]
+    avg_latency = (
+        snapshot["gemini_latency_ms_total"] / gemini_requests
+        if gemini_requests
+        else 0.0
+    )
+
+    return {
+        "service": "CyThan AI",
+        "uptime_seconds": round(time.time() - METRICS_STARTED_AT, 1),
+        "requests": {
+            "total": snapshot["requests_total"],
+            "successful": snapshot["requests_2xx"],
+            "client_errors": snapshot["requests_4xx"],
+            "server_errors": snapshot["requests_5xx"],
+        },
+        "chat": {
+            "total": snapshot["chat_requests_total"],
+            "successful": snapshot["chat_success_total"],
+            "quota_errors": snapshot["chat_quota_total"],
+            "network_errors": snapshot["chat_network_error_total"],
+            "generation_errors": snapshot["chat_generation_error_total"],
+        },
+        "gemini": {
+            "requests": gemini_requests,
+            "successful": snapshot["gemini_success_total"],
+            "quota_errors": snapshot["gemini_quota_total"],
+            "network_errors": snapshot["gemini_network_error_total"],
+            "other_errors": snapshot["gemini_other_error_total"],
+            "average_latency_ms": round(avg_latency, 1),
+            "max_latency_ms": round(snapshot["gemini_latency_ms_max"], 1),
+        },
+    }
+
+
 def service_unavailable_response(
     message: str,
     status_code: int = 503
@@ -804,6 +942,8 @@ async def chat(
     http_request: Request,
 ):
 
+    await increment_metric("chat_requests_total")
+
     # ---------------------------------------------------------------
     # Per-client request protection
     # ---------------------------------------------------------------
@@ -935,6 +1075,10 @@ async def chat(
 
             try:
 
+                # Start the latency timer immediately before contacting Gemini.
+                # It is used to measure time-to-first-token for monitoring.
+                gemini_started = time.perf_counter()
+
                 response_stream = (
 
                     await client.aio.models
@@ -968,6 +1112,9 @@ async def chat(
                     error
                 ):
 
+                    await increment_metric("gemini_quota_total")
+                    await increment_metric("chat_quota_total")
+
                     retry_seconds = extract_retry_seconds(error)
 
 
@@ -995,6 +1142,9 @@ async def chat(
 
                 if is_network_error(error):
 
+                    await increment_metric("gemini_network_error_total")
+                    await increment_metric("chat_network_error_total")
+
                     logger.warning(
                         "Gemini service could not be reached: %s",
                         error
@@ -1012,6 +1162,9 @@ async def chat(
                 # ----------------------------------------------------
                 # Other Gemini error
                 # ----------------------------------------------------
+
+                await increment_metric("gemini_other_error_total")
+                await increment_metric("chat_generation_error_total")
 
                 logger.exception(
                     "Gemini request failed"
@@ -1037,6 +1190,8 @@ async def chat(
 
         async def stream():
 
+            first_token_recorded = False
+
             try:
 
                 async for chunk in (
@@ -1045,12 +1200,20 @@ async def chat(
 
                     if chunk.text:
 
+                        if not first_token_recorded:
+                            first_token_recorded = True
+                            await record_gemini_latency(
+                                (time.perf_counter() - gemini_started) * 1000
+                            )
+
                         yield chunk.text
 
 
                 # If the request successfully completed,
                 # make sure the cooldown is cleared.
 
+                await increment_metric("chat_success_total")
+                await increment_metric("gemini_success_total")
                 mark_ai_available()
 
 
@@ -1066,6 +1229,9 @@ async def chat(
                 if is_quota_error(
                     error
                 ):
+
+                    await increment_metric("chat_quota_total")
+                    await increment_metric("gemini_quota_total")
 
                     retry_seconds = extract_retry_seconds(error)
 
@@ -1120,6 +1286,9 @@ async def chat(
 
                 if is_network_error(error):
 
+                    await increment_metric("chat_network_error_total")
+                    await increment_metric("gemini_network_error_total")
+
                     logger.warning(
                         "Gemini streaming connection failed: %s",
                         error
@@ -1144,6 +1313,9 @@ async def chat(
                 # ----------------------------------------------------
                 # Other streaming error
                 # ----------------------------------------------------
+
+                await increment_metric("chat_generation_error_total")
+                await increment_metric("gemini_other_error_total")
 
                 logger.exception(
                     "Gemini streaming error"
