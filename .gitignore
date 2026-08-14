@@ -24,3 +24,7 @@ htmlcov/
 
 # Deployment / build artifacts
 *.log
+
+# Backup files
+docs/js/*-backup.js
+docs/*-backup.css
