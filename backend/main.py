@@ -8,7 +8,7 @@ Features:
 - Gemini quota detection
 - Global AI service cooldown
 - AI service status endpoint
-- Static frontend hosting
+- API backend for the CyThan AI frontend
 """
 
 from __future__ import annotations
@@ -19,14 +19,13 @@ import logging
 import os
 import re
 import time
-from pathlib import Path
 
+#* from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field, field_validator
@@ -1137,7 +1136,7 @@ async def chat(
 
         )
 
-
+'''
 # --------------------------------------------------------------------
 # FRONTEND
 # --------------------------------------------------------------------
@@ -1175,3 +1174,4 @@ app.mount(
     name="docs",
 
 )
+'''
