@@ -1,0 +1,206 @@
+/* =========================================
+   CyThan AI - Layout
+   ========================================= */
+
+.app {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+
+/* =========================================
+   MAIN AREA
+   ========================================= */
+
+.main {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    width: calc(100% - var(--sidebar-width));
+    height: 100vh;
+
+    background: var(--bg-primary);
+
+    overflow: hidden;
+    isolation: isolate;
+}
+
+
+/* =========================================
+   BACKGROUND IMAGE
+   ========================================= */
+
+.main::before {
+    content: "";
+
+    position: absolute;
+    inset: -20px;
+
+    background:
+        url("../images/cythan-bg-dark.png");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    filter: blur(2px);
+
+    transform: scale(1.03);
+
+    z-index: -2;
+
+    transition:
+        filter 0.35s ease,
+        opacity 0.35s ease;
+}
+
+:root[data-theme="light"] .main::before {
+    background-image: url("../images/cythan-bg-light.png");
+    filter: blur(1px);
+}
+
+/* =========================================
+   BACKGROUND DARKENING LAYER
+========================================= */
+
+.main::after {
+    content: "";
+
+    position: absolute;
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.44);
+
+    z-index: -1;
+
+    pointer-events: none;
+
+    transition:
+        background 0.35s ease;
+}
+
+
+/* =========================================
+   LIGHT THEME BACKGROUND
+========================================= */
+
+:root[data-theme="light"] .main::after {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* =========================================
+   KEEP CONTENT ABOVE BACKGROUND
+   ========================================= */
+
+.main > * {
+    position: relative;
+    z-index: 1;
+}
+
+
+/* =========================================
+   SIDEBAR OPEN
+   ========================================= */
+
+/*
+ * The JavaScript adds:
+ *
+ * sidebar.active
+ * sidebarOverlay.active
+ *
+ * when the mobile sidebar opens.
+ */
+
+
+/* Darken the main area when sidebar is open */
+
+body:has(.sidebar.active) .main::after {
+    background:
+        rgba(0, 0, 0, 0.48);
+}
+
+
+/* Slightly increase background blur */
+
+body:has(.sidebar.active) .main::before {
+    filter: blur(6px);
+}
+
+
+/* =========================================
+   MOBILE BACKGROUND
+   ========================================= */
+
+@media (max-width: 768px) {
+
+    .main {
+        width: 100%;
+    }
+
+    .main::before {
+        background-image:
+            url("../images/cythan-bgMobile-dark.png");
+
+        background-size: cover;
+        background-position: center top;
+
+        filter: blur(2px);
+
+        /*
+         * Slightly zoom out the artwork.
+         * This prevents the robot/logo from becoming
+         * excessively large on narrow screens.
+         */
+        transform: scale(1.01);
+    }
+    :root[data-theme="light"] .main::before {
+        background-image: url("../images/cythan-bgMobile-light.png");
+    }
+
+
+    /* Make the background less distracting */
+    .main::after {
+        background:
+            rgba(4, 10, 22, 0.38);
+    }
+}
+
+
+/* =========================================
+   SMALL PHONES
+   ========================================= */
+
+@media (max-width: 480px) {
+
+    .main::before {
+        background-size: 100% auto;
+        background-position: center top;
+
+        filter: blur(2px);
+
+        transform: scale(1.01);
+    }
+
+    .main::after {
+        background:
+            rgba(4, 10, 22, 0.42);
+    }
+}
+
+
+/* =========================================
+   VERY SMALL PHONES
+   ========================================= */
+
+@media (max-width: 360px) {
+
+    .main::before {
+        filter: blur(2px);
+
+        transform: scale(1.05);
+    }
+
+}

@@ -1,5 +1,11 @@
 # CyThan AI
 
+## Project Documentation
+
+This README consolidates the project's Markdown documentation into a single file.
+
+# CyThan AI
+
 CyThan AI is a full-stack, ChatGPT-style AI application built with a vanilla HTML/CSS/JavaScript frontend and a Python FastAPI backend powered by Google's Gemini 3.5 Flash-lite-lite model.
 
 The frontend is designed to be lightweight, responsive, and deployable as a static website, while the backend handles AI requests and streams Gemini responses to the browser in real time.
@@ -660,3 +666,159 @@ CyThan AI uses:
 | Source control         | Git + GitHub                    |
 
 CyThan AI is designed so the frontend and backend can be developed independently while communicating through a simple `/api/chat` streaming API.
+
+---
+
+## Documentation: `CHAT_PERSISTENCE_UPGRADE.md`
+
+# CyThan AI — Phase 4.2: Chat Reliability & Persistence
+
+## Upgrades
+
+### Reliable persistence
+- User messages are persisted immediately before a Gemini request.
+- Conversations therefore survive refreshes and temporary network failures.
+- Failed generations do not store temporary error text as an assistant response.
+
+### Storage schema
+- Storage schema bumped to version 3.
+- Existing array-based chat data remains compatible.
+- Invalid records/messages are normalized and discarded safely.
+- Maximum limits prevent runaway localStorage growth.
+
+### Recovery
+- A last-known-good backup is kept in `cythan_ai_chats_backup`.
+- If the primary storage value becomes invalid JSON, CyThan attempts to restore the backup automatically.
+- Explicit "Clear all conversations" removes both primary and backup storage.
+
+### Safer chat lifecycle
+- Active chats are normalized before persistence.
+- Chat metadata is updated consistently.
+- Chat titles remain stable after their initial generation.
+- Existing rename/delete/new-chat behavior is preserved.
+
+### Streaming reliability
+- Streaming now identifies the current message by content/timestamp if object identity changed during persistence.
+- This prevents an edited/regenerated user message from accidentally being sent twice.
+
+## Testing
+The following JavaScript files were syntax-checked successfully:
+- `docs/js/state.js`
+- `docs/js/chat.js`
+- `docs/js/streaming.js`
+
+## Important
+The backup is only a browser-local recovery mechanism. Clearing browser site data, private browsing storage, or manually deleting both storage keys cannot be recovered by CyThan.
+
+---
+
+## Documentation: `PERFORMANCE_UPGRADE.md`
+
+# CyThan AI — Phase 4.3 Performance Upgrade
+
+## Changes
+
+- Batched streaming DOM updates with `requestAnimationFrame`.
+- Stopped syntax highlighting on every streamed chunk; highlighting now runs after the response finishes.
+- Reduced repeated scroll/layout work during streaming.
+- Enabled browser `content-visibility` for individual chat messages so long conversations require less layout/paint work.
+- Chat avatar images now use lazy loading and asynchronous decoding.
+- Added a reduced-motion accessibility rule.
+- Preserved existing chat persistence, service-status, security, settings, editing, copying, and regeneration functionality.
+
+## Validation
+
+All frontend JavaScript files were syntax-checked successfully with Node.js.
+
+---
+
+## Documentation: `SECURITY_UPGRADE.md`
+
+# CyThan AI — Phase 4.1 Security Upgrade
+
+## Backend protections added
+
+- Per-client request rate limiting: 10 chat requests per minute.
+- Per-client hourly request cap: 40 chat requests per hour.
+- Request message length limit: 12,000 characters.
+- Conversation history limit: 30 messages.
+- Individual history-message length limit: 8,000 characters.
+- Structured `422 INVALID_REQUEST` responses for invalid/oversized requests.
+- Structured `429 REQUEST_RATE_LIMITED` responses with `Retry-After`.
+- Security response headers for API and frontend responses.
+- API responses are marked `no-store` to avoid caching chat/status data.
+- Existing Gemini quota/cooldown handling remains intact.
+- Gemini API keys remain server-side only.
+
+## Frontend changes
+
+- Client-side rate-limit responses now show a warning banner.
+- The service status dot remains green for a client-only rate limit.
+- The warning includes a retry countdown when the backend supplies one.
+- Existing Gemini quota and connection-status handling is preserved.
+
+## Important deployment note
+
+The rate limiter is intentionally in-memory. It protects a single backend process, which is appropriate for the current single-instance deployment. If CyThan later runs multiple backend instances, the limiter should move to a shared store such as Redis so all instances enforce the same limits.
+
+---
+
+## Documentation: `SERVICE_STATUS_UPGRADE.md`
+
+# CyThan AI — Service Status Upgrade
+
+## Added
+
+- Global `/api/status` endpoint for frontend health/status checks.
+- Global backend cooldown state for Gemini quota exhaustion.
+- Structured `429` quota responses with `Retry-After`.
+- Structured `503` responses for temporary connectivity failures.
+- Frontend service-status banner with countdown.
+- Top-bar status dot now reflects available / cooldown / connection-error states.
+- Automatic status polling every 30 seconds.
+- Structured streaming-error handling so backend JSON errors are not rendered as assistant text.
+- Better friendly error messages.
+
+## Security
+
+No API key is stored in the frontend or committed by this upgrade.
+Keep `GEMINI_API_KEY` in the backend `.env` locally and in the deployment platform's environment variables.
+
+---
+
+## Documentation: `MOBILE_PWA_UPGRADE.md`
+
+# CyThan AI — Phase 4.4 Mobile & PWA Upgrade
+
+## Included
+
+- Responsive mobile composer and sidebar sizing.
+- Touch-friendly controls and tap behavior.
+- Safe-area support for devices with gesture/home-indicator areas.
+- Mobile-specific message/welcome-screen sizing.
+- Reduced-motion accessibility support.
+- Web App Manifest for installability.
+- Service worker with app-shell/offline fallback.
+- API requests are explicitly excluded from service-worker caching.
+- Mobile web-app metadata and theme color.
+
+## Important
+
+The service worker caches the static app shell only. Gemini/API responses and `/api/*`
+requests are never cached, so stale AI responses are not served as if they were live.
+
+For full PWA installation on production, serve the app over HTTPS.
+
+---
+
+## Documentation: `STATUS_INDICATOR_UPGRADE.md`
+
+# Status Indicator Upgrade
+
+The CyThan AI top-bar status dot now reflects connection/service state:
+
+- **Green:** status endpoint responds successfully within 1.2 seconds and no known error is present.
+- **Yellow:** the status endpoint responds successfully but takes longer than 1.2 seconds, indicating a poor/slow connection; temporary AI-service cooldowns also use yellow.
+- **Red:** the status endpoint cannot be reached, times out, returns an HTTP error, or a chat request fails because the browser cannot reach the backend.
+
+The status check uses an 8-second timeout and runs every 30 seconds. The light theme no longer overrides the dot to green, so yellow/red states remain visible in both themes.

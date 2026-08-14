@@ -1,0 +1,497 @@
+/* =========================================
+   Sidebar
+   ========================================= */
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+
+    width: var(--sidebar-width);
+    height: 100vh;
+
+    padding: 18px 14px;
+
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 4px 8px 20px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-size: 18px;
+    font-weight: 700;
+}
+
+/* ================================================================
+   SIDEBAR LOGO
+================================================================ */
+
+.logo-icon {
+    width: 50px;
+    height: 50px;
+
+    min-width: 40px;
+    min-height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    background: transparent;
+
+    flex-shrink: 0;
+}
+
+
+.logo-icon img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    object-fit: contain;
+
+    border-radius: inherit;
+}
+
+/* ================================================================
+   WELCOME LOGO
+================================================================ */
+
+.welcome-logo {
+    width: 96px;
+    height: 96px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 0 auto 20px;
+
+    border-radius: 24px;
+
+    overflow: hidden;
+
+    background: transparent;
+
+    flex-shrink: 0;
+}
+
+.welcome-logo img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    object-fit: contain;
+
+    border-radius: inherit;
+}
+@media (max-width: 600px) {
+
+    .welcome-logo {
+        width: 80px;
+        height: 80px;
+
+        border-radius: 20px;
+    }
+
+}
+
+.logo-icon {
+    width: 34px;
+    height: 34px;
+
+    border-radius: 10px;
+}
+
+.sidebar-close {
+    display: none;
+
+    background: transparent;
+    color: var(--text-secondary);
+
+    font-size: 25px;
+}
+
+.new-chat-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    width: 100%;
+    padding: 12px;
+
+    border-radius: var(--radius-md);
+
+    background: var(--accent);
+    color: #001014;
+
+    font-weight: 700;
+
+    transition: 0.2s ease;
+}
+
+.new-chat-btn:hover {
+    background: #31e3ff;
+    transform: translateY(-1px);
+}
+
+.chat-history {
+    flex: 1;
+    overflow-y: auto;
+
+    margin-top: 24px;
+}
+
+.history-title {
+    padding: 0 10px 10px;
+
+    color: var(--text-muted);
+
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.history-item,
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    width: 100%;
+    padding: 11px 10px;
+
+    border-radius: var(--radius-sm);
+
+    background: transparent;
+    color: var(--text-secondary);
+
+    text-align: left;
+
+    transition: 0.2s ease;
+}
+
+.history-item:hover,
+.sidebar-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.history-item span:last-child {
+    overflow: hidden;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.sidebar-footer {
+    padding-top: 12px;
+
+    border-top: 1px solid var(--border);
+}
+
+
+.history-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.history-item-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-delete {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 5px;
+}
+
+.history-item:hover .history-delete,
+.history-item:focus-within .history-delete {
+    opacity: 0.7;
+}
+
+.history-delete:hover {
+    opacity: 1;
+}
+
+.history-item.active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.history-empty {
+    padding: 10px 14px;
+    margin: 0;
+    opacity: 0.5;
+    font-size: 13px;
+}
+
+/* ================================================================
+   CHAT HISTORY HEADER
+================================================================ */
+
+.history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.history-title {
+    margin: 0;
+}
+
+
+/* ================================================================
+   CLEAR HISTORY
+================================================================ */
+
+.clear-history-button {
+    border: none;
+    background: transparent;
+    color: inherit;
+    opacity: 0.55;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 6px;
+}
+
+.clear-history-button:hover {
+    opacity: 1;
+}
+
+
+/* ================================================================
+   HISTORY GROUP
+================================================================ */
+
+.history-group-title {
+    margin: 14px 8px 5px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.45;
+}
+
+
+/* ================================================================
+   HISTORY ITEM WRAPPER
+================================================================ */
+
+.history-item-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+
+/* ================================================================
+   HISTORY ITEM
+================================================================ */
+
+.history-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex: 1;
+    min-width: 0;
+    padding-right: 38px;
+}
+
+
+/* ================================================================
+   HISTORY TITLE
+================================================================ */
+
+.history-item-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ================================================================
+   THREE-DOT BUTTON
+================================================================ */
+
+.history-menu-button {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    width: 28px;
+    height: 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 6px;
+
+    background: transparent;
+    color: inherit;
+
+    cursor: pointer;
+
+    opacity: 0;
+    transition:
+        opacity 0.15s ease,
+        background 0.15s ease;
+}
+
+.history-item-wrapper:hover
+.history-menu-button,
+.history-item-wrapper:focus-within
+.history-menu-button {
+    opacity: 0.7;
+}
+
+.history-menu-button:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+
+/* ================================================================
+   CHAT MENU
+================================================================ */
+
+.history-menu {
+    position: absolute;
+    z-index: 100;
+
+    right: 6px;
+    top: calc(100% - 4px);
+
+    min-width: 120px;
+
+    padding: 5px;
+
+    border-radius: 8px;
+
+    background: #1d1d1d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.35);
+}
+
+.history-menu[hidden] {
+    display: none;
+}
+
+
+/* ================================================================
+   MENU ITEMS
+================================================================ */
+
+.history-menu-item {
+    width: 100%;
+
+    border: none;
+    border-radius: 6px;
+
+    background: transparent;
+    color: inherit;
+
+    text-align: left;
+
+    padding: 8px 10px;
+
+    cursor: pointer;
+
+    font-size: 13px;
+}
+
+.history-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.history-menu-item.delete {
+    color: #ff7070;
+}
+
+
+/* ================================================================
+   EMPTY HISTORY
+================================================================ */
+
+.history-empty {
+    margin: 8px;
+    font-size: 13px;
+    opacity: 0.45;
+}
+
+/* ================================================================
+   LUCIDE ICONS
+================================================================ */
+
+.sidebar-item,
+.new-chat-btn,
+.history-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.sidebar-item svg,
+.new-chat-btn svg,
+.history-icon svg,
+.history-menu-button svg,
+.history-menu-item svg,
+.clear-history-button svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+}
+
+.history-menu-item {
+    justify-content: flex-start;
+}
+
+.history-menu-button {
+    padding: 0;
+}

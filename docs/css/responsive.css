@@ -1,0 +1,174 @@
+/* =========================================
+   Responsive Design
+   ========================================= */
+
+@media (max-width: 768px) {
+
+    .sidebar {
+        position: fixed;
+        z-index: 100;
+
+        left: -100%;
+
+        transition: left 0.3s ease;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .sidebar-close {
+        display: block;
+    }
+
+    .main {
+        width: 100%;
+    }
+
+    .menu-btn {
+        display: block;
+    }
+
+    .chat-container {
+        padding: 20px 15px;
+    }
+
+    .welcome-screen {
+        margin-top: 45px;
+    }
+
+    .suggestions {
+        grid-template-columns: 1fr;
+    }
+
+    .composer-area {
+        padding: 10px 12px 14px;
+    }
+}
+
+.sidebar-overlay {
+    display: none;
+}
+
+@media (max-width: 768px) {
+
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 90;
+
+        background: rgba(0, 0, 0, 0.5);
+
+        opacity: 0;
+        pointer-events: none;
+
+        transition: opacity 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+
+/* ================================================================
+   LIGHT THEME - TOP BAR
+================================================================ */
+
+:root[data-theme="light"] .topbar {
+
+    background: rgba(255, 255, 255, 0.88) !important;
+
+    color: var(--text-primary) !important;
+
+    border-bottom: 1px solid var(--border) !important;
+
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+
+/* ================================================================
+   LIGHT THEME - MODEL NAME
+================================================================ */
+
+:root[data-theme="light"] .model-name {
+
+    color: var(--text-primary) !important;
+
+    opacity: 1 !important;
+
+    visibility: visible !important;
+
+}
+
+
+/* Model status dot — preserve state colors in light theme. */
+
+:root[data-theme="light"] .status-dot.status-dot-available {
+    background: #00c853 !important;
+    box-shadow: 0 0 8px rgba(0, 200, 83, 0.45) !important;
+}
+
+:root[data-theme="light"] .status-dot.status-dot-unavailable {
+    background: #f2a900 !important;
+    box-shadow: 0 0 8px rgba(242, 169, 0, 0.45) !important;
+}
+
+:root[data-theme="light"] .status-dot.status-dot-error {
+    background: #e53935 !important;
+    box-shadow: 0 0 8px rgba(229, 57, 53, 0.45) !important;
+}
+
+/* ================================================================
+   LIGHT THEME - MENU BUTTON
+================================================================ */
+
+:root[data-theme="light"] .menu-btn {
+
+    color: var(--text-primary) !important;
+
+    background: transparent !important;
+
+    opacity: 1 !important;
+
+    visibility: visible !important;
+
+}
+
+
+/* Hover */
+
+:root[data-theme="light"] .menu-btn:hover {
+
+    background: rgba(0, 0, 0, 0.06) !important;
+
+    color: var(--accent-dark) !important;
+
+}
+
+
+/* ================================================================
+   LIGHT THEME - TOPBAR CHILDREN
+================================================================ */
+
+:root[data-theme="light"] .topbar button,
+:root[data-theme="light"] .topbar span {
+
+    color: inherit !important;
+
+}
+
+
+/* ================================================================
+   LIGHT THEME - TOPBAR GLASS EFFECT
+================================================================ */
+
+:root[data-theme="light"] .topbar {
+
+    box-shadow:
+        0 1px 12px rgba(0, 0, 0, 0.05);
+
+}
