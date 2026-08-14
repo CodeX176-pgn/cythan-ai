@@ -789,7 +789,7 @@ async def operational_metrics():
             "quota_errors": snapshot["gemini_quota_total"],
             "network_errors": snapshot["gemini_network_error_total"],
             "other_errors": snapshot["gemini_other_error_total"],
-            "average_latency_ms": round(avg_latency, 1),
+            "average_latency_ms": round(avg_latency, 1),  # time-to-first-token
             "max_latency_ms": round(snapshot["gemini_latency_ms_max"], 1),
         },
     }
@@ -1074,6 +1074,10 @@ async def chat(
 
 
             try:
+
+                # Count every attempt to contact Gemini, including
+                # requests that later fail with quota/network/other errors.
+                await increment_metric("gemini_requests_total")
 
                 # Start the latency timer immediately before contacting Gemini.
                 # It is used to measure time-to-first-token for monitoring.
