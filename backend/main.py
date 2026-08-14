@@ -695,6 +695,30 @@ class ChatRequest(BaseModel):
 
 
 # --------------------------------------------------------------------
+# ROOT / SERVICE INFO
+# --------------------------------------------------------------------
+
+@app.get("/")
+async def root():
+    """Return a lightweight service-info response for the Render root URL.
+
+    Render may probe the root path independently of /health. Returning
+    JSON here avoids a misleading 404 while keeping the backend API-only.
+    """
+    return {
+        "service": "CyThan AI",
+        "status": "running",
+        "message": "CyThan AI backend is online.",
+        "endpoints": {
+            "health": "/health",
+            "status": "/api/status",
+            "chat": "/api/chat",
+            "metrics": "/api/metrics",
+        },
+    }
+
+
+# --------------------------------------------------------------------
 # Health Check
 # --------------------------------------------------------------------
 
